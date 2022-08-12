@@ -181,7 +181,7 @@ class _ButtonDirective(SphinxDirective):
             textnodes, _ = self.state.inline_text(
                 "\n".join(self.content), self.lineno + self.content_offset
             )
-            content = nodes.inline(target, target)
+            content = nodes.inline("", "")
             content.extend(textnodes)
         else:
             content = nodes.inline(target, target)
