@@ -61,12 +61,15 @@ class CardDirective(SphinxDirective):
         "img-background": directives.uri,
         "link": directives.uri,
         "link-type": make_choice(["url", "any", "ref", "doc"]),
+        "link-alt": directives.unchanged,
         "shadow": make_choice(["none", "sm", "md", "lg"]),
         "class-card": directives.class_option,
         "class-header": directives.class_option,
         "class-body": directives.class_option,
         "class-title": directives.class_option,
         "class-footer": directives.class_option,
+        "class-img-top": directives.class_option,
+        "class-img-bottom": directives.class_option,
     }
 
     def run(self) -> List[nodes.Node]:
@@ -112,7 +115,7 @@ class CardDirective(SphinxDirective):
                 "",
                 uri=options["img-top"],
                 alt="card-img-top",
-                classes=["sd-card-img-top"],
+                classes=["sd-card-img-top"] + options.get("class-img-top", []),
             )
             container.append(image_top)
 
@@ -153,23 +156,29 @@ class CardDirective(SphinxDirective):
                 "",
                 uri=options["img-bottom"],
                 alt="card-img-bottom",
-                classes=["sd-card-img-bottom"],
+                classes=["sd-card-img-bottom"] + options.get("class-img-bottom", []),
             )
             container.append(image_bottom)
 
         if "link" in options:
             link_container = PassthroughTextElement()
+            _classes = ["sd-stretched-link"]
+            _rawtext = options.get("link-alt") or ""
+            if options.get("link-alt"):
+                _classes.append("sd-hide-link-text")
             if options.get("link-type", "url") == "url":
                 link = nodes.reference(
-                    "",
+                    _rawtext,
                     "",
                     refuri=options["link"],
-                    classes=["sd-stretched-link"],
+                    classes=_classes,
                 )
+                if options.get("link-alt"):
+                    link.append(nodes.inline(_rawtext, _rawtext))
             else:
                 options = {
                     # TODO the presence of classes raises an error if the link cannot be found
-                    "classes": ["sd-stretched-link"],
+                    "classes": _classes,
                     "reftarget": options["link"],
                     "refdoc": inst.env.docname,
                     "refdomain": "" if options["link-type"] == "any" else "std",
@@ -177,7 +186,9 @@ class CardDirective(SphinxDirective):
                     "refexplicit": True,
                     "refwarn": True,
                 }
-                link = addnodes.pending_xref("", nodes.inline(), **options)
+                link = addnodes.pending_xref(
+                    _rawtext, nodes.inline(_rawtext, _rawtext), **options
+                )
             inst.set_source_info(link)
             link_container += link
             container.append(link_container)

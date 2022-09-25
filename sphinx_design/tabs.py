@@ -1,5 +1,4 @@
 from typing import List
-from uuid import uuid4
 
 from docutils import nodes
 from docutils.parsers.rst import directives
@@ -8,6 +7,7 @@ from sphinx.transforms.post_transforms import SphinxPostTransform
 from sphinx.util.docutils import SphinxDirective
 from sphinx.util.logging import getLogger
 
+from ._compat import findall
 from .shared import WARNING_TYPE, create_component, is_component
 
 LOGGER = getLogger(__name__)
@@ -208,15 +208,20 @@ class TabSetHtmlTransform(SphinxPostTransform):
     default_priority = 200
     formats = ("html",)
 
-    def get_unique_key(self):
-        return str(uuid4())
-
     def run(self) -> None:
         """Run the transform."""
-        for tab_set in self.document.traverse(
+
+        # setup id generators
+        tab_set_id_base = "sd-tab-set-"
+        tab_set_id_num = 0
+        tab_item_id_base = "sd-tab-item-"
+        tab_item_id_num = 0
+
+        for tab_set in findall(self.document)(
             lambda node: is_component(node, "tab-set")
         ):
-            tab_set_identity = self.get_unique_key()
+            tab_set_identity = tab_set_id_base + str(tab_set_id_num)
+            tab_set_id_num += 1
             children = []
             # get the first selected node
             selected_idx = None
@@ -239,7 +244,8 @@ class TabSetHtmlTransform(SphinxPostTransform):
                 except ValueError:
                     print(tab_item)
                     raise
-                tab_item_identity = self.get_unique_key()
+                tab_item_identity = tab_item_id_base + str(tab_item_id_num)
+                tab_item_id_num += 1
 
                 # create: <input checked="checked" id="id" type="radio">
                 input_node = sd_tab_input(
@@ -259,6 +265,8 @@ class TabSetHtmlTransform(SphinxPostTransform):
                     input_id=tab_item_identity,
                     classes=tab_label["classes"],
                 )
+                if tab_label.get("ids"):
+                    label_node["ids"] += tab_label["ids"]
                 if "sync_id" in tab_label:
                     label_node["sync_id"] = tab_label["sync_id"]
                 label_node.source, label_node.line = tab_item.source, tab_item.line
