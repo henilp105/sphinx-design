@@ -17,7 +17,6 @@ extensions = ["sphinx_design"]
 ```
 
 ## Supported browsers
-
 - Chrome >= 60
 - Firefox >= 60
 - Firefox ESR
